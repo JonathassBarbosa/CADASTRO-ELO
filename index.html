@@ -63,6 +63,8 @@ input:focus,select:focus{border-color:var(--violet);outline:none;box-shadow:0 0 
 .done .again{display:grid;gap:10px;margin-top:22px}
 .btn2{height:56px;border-radius:14px;font-weight:800;font-size:17px;cursor:pointer;border:2px solid var(--navy);background:#fff;color:var(--navy)}
 .btn2.p{background:var(--navy);color:#fff}
+.mail{margin-top:18px;text-align:left;background:#F4ECFF;border-radius:14px;padding:16px;font-size:15px;line-height:1.45;color:#3B1E6E}
+.mail b{color:var(--purple);overflow-wrap:anywhere}
 .count{margin-top:16px;font-size:14px;color:var(--muted)}
 .priv{font-size:13px;color:var(--muted);text-align:center;margin:14px 6px 0}
 footer{display:flex;justify-content:center;align-items:center;gap:16px;padding-block:8px 36px}
@@ -108,7 +110,7 @@ footer img.g{height:30px}footer img.el{height:26px}footer i{width:1px;height:28p
       <label id="l_nome"><b id="bNome">Nome completo</b><input id="nome" autocomplete="off" placeholder="Ex.: José da Silva"><span class="e"></span></label>
       <label id="l_cpf"><b>CPF</b><input id="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"><span class="e"></span></label>
       <label id="l_whats"><b>Celular (WhatsApp)</b><input id="whats" inputmode="tel" autocomplete="off" placeholder="(00) 00000-0000"><span class="e"></span></label>
-      <label id="l_email"><b>E-mail</b><input id="email" type="email" inputmode="email" autocomplete="off" placeholder="Ex.: jose@gmail.com"><small>O acesso ao Elo chega neste e-mail.</small><span class="e"></span></label>
+      <label id="l_email"><b>E-mail</b><input id="email" type="email" inputmode="email" autocomplete="off" placeholder="Ex.: jose@gmail.com"><small>Vamos mandar um e-mail de confirmação para este endereço. Confira se está certo.</small><span class="e"></span></label>
       <div class="onlyE" id="l_funcao" style="margin-top:16px"><b style="display:block;font-weight:700;color:var(--navy);margin-bottom:8px">O que essa pessoa faz?</b>
         <div class="chips" id="funcoes"></div><span class="e"></span></div>
       <input id="hp" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
@@ -123,6 +125,7 @@ footer img.g{height:30px}footer img.el{height:26px}footer i{width:1px;height:28p
     <h2>Cadastro enviado!</h2>
     <div class="who" id="dWho"></div>
     <p id="dTxt"></p>
+    <div id="dMail"></div>
     <div id="dDup"></div>
     <div class="again">
       <button class="btn2 p" id="maisP" type="button">Cadastrar outro parceiro</button>
@@ -215,12 +218,13 @@ $('send').onclick=async()=>{
     equipe:tipo==='E'?[{...pessoa,funcao}]:[]};
   const b=$('send');const txt=b.textContent;b.disabled=true;b.textContent='Enviando…';
   try{let res;
-    if(!SCRIPT_URL){await new Promise(r=>setTimeout(r,600));res={ok:true,gravados:1,duplicados:[]}}
+    if(!SCRIPT_URL){await new Promise(r=>setTimeout(r,600));res={ok:true,gravados:1,duplicados:[],emailsEnviados:1}}
     else{const r=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});res=await r.json()}
     if(!res.ok)throw new Error(res.erro||'erro');
     const n=(+get('n')||0)+1;put('n',String(n));
     $('dWho').textContent=tipo==='P'?$('voucher').value.trim():pessoa.nome;
     $('dTxt').textContent=`Enviado para a equipe Elo · ${sala}`;
+    $('dMail').innerHTML=res.emailsEnviados===undefined?'':res.emailsEnviados?`<div class="mail">📩 Enviamos um e-mail para <b>${esc(pessoa.email)}</b>.<br>Peça para ${tipo==='P'?'o responsável':'a pessoa'} abrir o e-mail e tocar em <b>Confirmar meu e-mail</b>. Se não aparecer, olhe a caixa de spam.</div>`:'<div class="note warn">Não foi possível mandar o e-mail de confirmação agora. A equipe Elo vai reenviar.</div>';
     $('dDup').innerHTML=res.duplicados&&res.duplicados.length?'<div class="note warn">Este CPF já tinha sido enviado antes. A equipe Elo vai conferir.</div>':'';
     $('count').textContent=`Você já enviou ${n} cadastro${n>1?'s':''} neste aparelho.`;
     $('form').hidden=true;$('done').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
