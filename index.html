@@ -87,7 +87,6 @@ footer img.g{height:30px}footer img.el{height:26px}footer i{width:1px;height:28p
       <div id="salaEdit">
         <label id="lSala"><b>Qual é a sua sala?</b><select id="sala"></select><span class="e"></span></label>
         <label id="lQuem"><b>Seu nome</b><input id="quem" autocomplete="name" placeholder="Ex.: Maria Souza"><span class="e"></span></label>
-        <label id="lCod" hidden><b>Código de acesso</b><input id="cod" autocomplete="off" placeholder="Recebido da equipe Elo"><span class="e"></span></label>
       </div>
       <div class="saved" id="salaView" hidden><div><b id="vSala"></b><span id="vQuem"></span></div><button class="link" id="trocar" type="button">Trocar</button></div>
     </section>
@@ -112,6 +111,7 @@ footer img.g{height:30px}footer img.el{height:26px}footer i{width:1px;height:28p
       <label id="l_email"><b>E-mail</b><input id="email" type="email" inputmode="email" autocomplete="off" placeholder="Ex.: jose@gmail.com"><small>O acesso ao Elo chega neste e-mail.</small><span class="e"></span></label>
       <div class="onlyE" id="l_funcao" style="margin-top:16px"><b style="display:block;font-weight:700;color:var(--navy);margin-bottom:8px">O que essa pessoa faz?</b>
         <div class="chips" id="funcoes"></div><span class="e"></span></div>
+      <input id="hp" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
       <div id="eSend"></div>
       <button class="send" id="send" type="button">Enviar cadastro</button>
       <p class="priv">Os dados são usados só para criar o acesso ao Elo.</p>
@@ -136,8 +136,7 @@ footer img.g{height:30px}footer img.el{height:26px}footer i{width:1px;height:28p
 
 <script>
 /* ========= CONFIGURAÇÃO =========
-   1) Cole a URL do Apps Script (termina em /exec).
-   2) Envie o link com o código no final:  https://.../?c=SEUCODIGO  */
+   Cole a URL do Apps Script (termina em /exec). */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBPfR3X-qTZS8u19hh6VPMDP41zb4PSjIfoah9EsCBWx5hHVbkOlkSFxuQP_VRhCE/exec";
 const SALAS = {
   "Pará · Salinas": ["Park Hotel","Beach Hotel"],
@@ -147,7 +146,7 @@ const SALAS = {
   "Pernambuco": ["Sala Muro Alto","Sala Cupe","Porto Alto Hotel","Porto 2 Life Hotel","Sala Porto de Galinhas – Dia","Sala Porto de Galinhas – Noite"],
   "Ceará": ["Sala Lagoa do Paraíso","Sala Jericoacoara Villa"]
 };
-const FUNCOES = ["Supervisão","Administrativo","Recepção","Captação","Outra"];
+const FUNCOES = ["Supervisor","Analista","Assistente de contratos"];
 /* ================================ */
 (function(){
 const $=id=>document.getElementById(id);
@@ -161,13 +160,11 @@ const get=k=>{try{return localStorage.getItem('elo.'+k)||''}catch(e){return''}};
 const put=(k,v)=>{try{localStorage.setItem('elo.'+k,v)}catch(e){}};
 
 if(!SCRIPT_URL)$('demo').hidden=false;
-let code=new URLSearchParams(location.search).get('c')||get('cod');
-if(code)put('cod',code);else $('lCod').hidden=false;
 
 /* sala */
 const SEL=$('sala');
 SEL.innerHTML='<option value="">Escolha na lista</option>'+Object.entries(SALAS).map(([r,ss])=>`<optgroup label="${esc(r)}">${ss.map(s=>`<option value="${esc(r)}|${esc(s)}">${esc(s)}</option>`).join('')}</optgroup>`).join('');
-function showSala(){const v=get('sala'),q=get('quem');const ok=v&&q&&(code||get('cod'));
+function showSala(){const v=get('sala'),q=get('quem');const ok=v&&q;
   $('salaEdit').hidden=!!ok;$('salaView').hidden=!ok;
   if(ok){$('vSala').textContent=v.split('|')[1];$('vQuem').textContent='Enviando como '+q}
   else{SEL.value=v;$('quem').value=q}}
@@ -188,8 +185,8 @@ $('cP').onclick=()=>setTipo('P');$('cE').onclick=()=>setTipo('E');
 /* inputs */
 $('cpf').addEventListener('input',e=>{e.target.value=mCpf(e.target.value);err('l_cpf','')});
 $('whats').addEventListener('input',e=>{e.target.value=mTel(e.target.value);err('l_whats','')});
-['voucher','nome','email','quem','cod'].forEach(k=>$(k).addEventListener('input',()=>err('l_'+k==='l_quem'?'lQuem':'l_'+k,'')));
-$('quem').addEventListener('input',()=>err('lQuem',''));$('cod').addEventListener('input',()=>err('lCod',''));SEL.addEventListener('change',()=>err('lSala',''));
+['voucher','nome','email'].forEach(k=>$(k).addEventListener('input',()=>err('l_'+k,'')));
+$('quem').addEventListener('input',()=>err('lQuem',''));SEL.addEventListener('change',()=>err('lSala',''));
 function err(id,msg){const l=$(id);if(!l)return;l.classList.toggle('bad',!!msg);const e=l.querySelector('.e');if(e)e.textContent=msg}
 
 function validate(){const bad=[];
@@ -197,7 +194,6 @@ function validate(){const bad=[];
   if(salaOpen){
     if(!SEL.value){err('lSala','Escolha a sua sala.');bad.push('lSala')}
     if($('quem').value.trim().length<3){err('lQuem','Escreva o seu nome.');bad.push('lQuem')}
-    if(!$('lCod').hidden&&!$('cod').value.trim()){err('lCod','Digite o código que a equipe Elo enviou.');bad.push('lCod')}
   }
   if(!tipo){$('eTipo').textContent='Escolha uma opção.';bad.push('eTipo')}
   if(tipo==='P'&&!$('voucher').value.trim()){err('l_voucher','Escreva o nome do parceiro como está no TSE.');bad.push('l_voucher')}
@@ -211,12 +207,12 @@ function validate(){const bad=[];
 
 $('send').onclick=async()=>{
   $('eSend').innerHTML='';if(!validate())return;
-  if(!$('salaEdit').hidden){put('sala',SEL.value);put('quem',$('quem').value.trim());if(!$('lCod').hidden){code=$('cod').value.trim();put('cod',code)}}
+  if(!$('salaEdit').hidden){put('sala',SEL.value);put('quem',$('quem').value.trim())}
   const [regiao,sala]=get('sala').split('|');
   const pessoa={nome:$('nome').value.trim(),cpf:$('cpf').value,email:$('email').value.trim(),whats:$('whats').value};
-  const payload={codigo:code||get('cod'),ident:{nome:get('quem'),email:'',funcao:'',regiao,sala},
-    parceiros:tipo==='P'?[{...pessoa,voucher:$('voucher').value.trim(),tipo:'',local:'',receb:'',obs:''}]:[],
-    equipe:tipo==='E'?[{...pessoa,funcao,obs:''}]:[]};
+  const payload={hp:$('hp').value,ident:{nome:get('quem'),regiao,sala},
+    parceiros:tipo==='P'?[{...pessoa,voucher:$('voucher').value.trim()}]:[],
+    equipe:tipo==='E'?[{...pessoa,funcao}]:[]};
   const b=$('send');const txt=b.textContent;b.disabled=true;b.textContent='Enviando…';
   try{let res;
     if(!SCRIPT_URL){await new Promise(r=>setTimeout(r,600));res={ok:true,gravados:1,duplicados:[]}}
@@ -230,8 +226,7 @@ $('send').onclick=async()=>{
     $('form').hidden=true;$('done').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){
     const m=String(e.message||'');
-    if(/c[oó]digo/i.test(m)){put('cod','');code='';$('lCod').hidden=false;$('salaEdit').hidden=false;$('salaView').hidden=true;err('lCod','Código incorreto. Confira com a equipe Elo.');$('bSala').scrollIntoView({behavior:'smooth'})}
-    else $('eSend').innerHTML='<div class="note err">Não foi possível enviar agora. Confira a internet e toque em enviar de novo.</div>';
+    $('eSend').innerHTML='<div class="note err">Não foi possível enviar agora. Confira a internet e toque em enviar de novo.</div>';
   }finally{b.disabled=false;b.textContent=txt}
 };
 
